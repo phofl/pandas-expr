@@ -66,7 +66,7 @@ class CategoricalAccessor(Accessor):
         """
         if self.known:
             return self._series
-        from dask_expr._collection import new_collection
+        from pandas_expr._collection import new_collection
 
         categories = (
             new_collection(PropertyMap(self._series.expr, "cat", "categories"))
@@ -80,7 +80,7 @@ class CategoricalAccessor(Accessor):
         if not self.known:
             return self._series
 
-        from dask_expr import new_collection
+        from pandas_expr import new_collection
 
         return new_collection(AsUnknown(self._series.expr))
 
@@ -115,7 +115,7 @@ class CategoricalAccessor(Accessor):
                 "`df.categorize()` beforehand to ensure known categories"
             )
             raise AttributeNotImplementedError(msg)
-        from dask_expr._collection import new_collection
+        from pandas_expr._collection import new_collection
 
         return new_collection(PropertyMap(self._series.expr, "cat", "codes"))
 

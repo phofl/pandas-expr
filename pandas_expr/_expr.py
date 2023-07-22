@@ -7,16 +7,17 @@ import os
 from collections import defaultdict
 from collections.abc import Generator, Mapping
 
-import dask
 import pandas as pd
 import toolz
-from dask.base import normalize_token
-from dask.dataframe.core import make_meta
-from dask.dataframe.dispatch import meta_nonempty
-from dask.dataframe.utils import clear_known_categories
 from pandas.compat._optional import import_optional_dependency
 from pandas.core.dtypes.common import is_array_like
 
+from pandas_expr._deps import (
+    clear_known_categories,
+    make_meta,
+    meta_nonempty,
+    normalize_token,
+)
 from pandas_expr._util import M, _tokenize_deterministic, apply, funcname, ishashable
 
 replacement_rules = []
@@ -1893,6 +1894,8 @@ class Fused(Blockwise):
     def _execute_task(graph, name, *deps):
         for i, dep in enumerate(deps):
             graph["_" + str(i)] = dep
+        import dask
+
         return dask.core.get(graph, name)
 
 

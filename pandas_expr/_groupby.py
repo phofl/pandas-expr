@@ -2,9 +2,9 @@ import functools
 
 import numpy as np
 import pandas as pd
-from dask.dataframe.dispatch import meta_nonempty
 
 from pandas_expr._collection import DataFrame, Series, new_collection
+from pandas_expr._deps import meta_nonempty
 from pandas_expr._expr import Projection
 from pandas_expr._reductions import Reduction
 from pandas_expr._util import M, apply

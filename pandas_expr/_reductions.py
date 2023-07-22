@@ -1,6 +1,6 @@
 import pandas as pd
-from dask.dataframe.core import make_meta, meta_nonempty
 
+from pandas_expr._deps import make_meta, meta_nonempty
 from pandas_expr._expr import Elemwise, Expr, Index, Projection
 from pandas_expr._util import M, apply
 

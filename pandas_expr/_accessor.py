@@ -14,7 +14,7 @@ class Accessor:
     """
 
     def __init__(self, series):
-        from dask_expr import Series
+        from pandas_expr import Series
 
         if not isinstance(series, Series):
             raise ValueError("Accessor cannot be initialized")
@@ -53,7 +53,7 @@ class Accessor:
         return maybe_wrap_pandas(obj, out)
 
     def _function_map(self, attr, *args, **kwargs):
-        from dask_expr._collection import new_collection
+        from pandas_expr._collection import new_collection
 
         return new_collection(
             FunctionMap(self._series.expr, self._accessor_name, attr, args, kwargs)

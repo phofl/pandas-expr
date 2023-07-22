@@ -4,7 +4,7 @@ import functools
 from collections.abc import Sequence
 from types import LambdaType
 
-from dask.base import normalize_token, tokenize
+from pandas_expr._deps import normalize_token, tokenize
 
 
 def _convert_to_list(column) -> list | None:

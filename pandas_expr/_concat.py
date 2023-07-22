@@ -1,9 +1,8 @@
 import functools
 
 import pandas as pd
-from dask.dataframe.dispatch import make_meta, meta_nonempty
-from dask.dataframe.utils import strip_unknown_categories
 
+from pandas_expr._deps import make_meta, meta_nonempty, strip_unknown_categories
 from pandas_expr._expr import Blockwise, Projection
 
 

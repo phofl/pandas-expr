@@ -3,7 +3,6 @@ from __future__ import annotations
 import functools
 
 import pandas as pd
-from dask.base import collections_to_dsk
 from fsspec.utils import stringify_path
 from pandas._typing import Axes, Dtype
 from pandas.core.accessor import CachedAccessor
@@ -11,6 +10,7 @@ from pandas.core.accessor import CachedAccessor
 from pandas_expr import _expr as expr
 from pandas_expr._categorical import CategoricalAccessor
 from pandas_expr._concat import Concat
+from pandas_expr._deps import collections_to_dsk
 from pandas_expr._expr import Eval, no_default
 from pandas_expr._merge import JoinRecursive, Merge
 from pandas_expr._reductions import (

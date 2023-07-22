@@ -51,8 +51,8 @@ def get_config() -> VersioneerConfig:
     cfg.VCS = "git"
     cfg.style = "pep440"
     cfg.tag_prefix = ""
-    cfg.parentdir_prefix = "dask-"
-    cfg.versionfile_source = "dask_expr/_version.py"
+    cfg.parentdir_prefix = "pandas-"
+    cfg.versionfile_source = "pandas_expr/_version.py"
     cfg.verbose = False
     return cfg
 
