@@ -7,3 +7,4 @@ dependencies:
   - pyarrow
   - pandas>=2
   - pre-commit
+  - dask
