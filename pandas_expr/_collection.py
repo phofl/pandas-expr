@@ -363,11 +363,12 @@ class DataFrame(FrameBase):
         suffixes=("_x", "_y"),
         indicator=False,
     ):
+        if on is not None:
+            left_on = right_on = on
         return new_collection(
             Merge(
                 self.expr,
                 right.expr,
-                on=on,
                 how=how,
                 left_on=left_on,
                 right_on=right_on,

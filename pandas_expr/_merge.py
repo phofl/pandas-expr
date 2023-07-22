@@ -1,6 +1,6 @@
 import functools
 
-from pandas_expr._expr import Blockwise, Expr
+from pandas_expr._expr import Blockwise, Expr, Projection
 from pandas_expr._util import M
 
 
@@ -9,7 +9,6 @@ class Merge(Blockwise):
         "left",
         "right",
         "how",
-        "on",
         "left_on",
         "right_on",
         "left_index",
@@ -19,7 +18,6 @@ class Merge(Blockwise):
     ]
     _defaults = {
         "how": "inner",
-        "on": None,
         "left_on": None,
         "right_on": None,
         "left_index": False,
@@ -29,7 +27,6 @@ class Merge(Blockwise):
     }
     _keyword_only = [
         "how",
-        "on",
         "left_on",
         "right_on",
         "left_index",
@@ -38,6 +35,48 @@ class Merge(Blockwise):
         "indicator",
     ]
     operation = M.merge
+
+    def _simplify_up(self, parent):
+        if isinstance(parent, Projection):
+            # Reorder the column projection to
+            # occur before the Merge
+            projection = parent.operand("columns")
+            if isinstance(projection, (str, int)):
+                projection = [projection]
+
+            left, right = self.left, self.right
+            left_on, right_on = self.left_on, self.right_on
+            left_suffix, right_suffix = self.suffixes[0], self.suffixes[1]
+            project_left, project_right = [], []
+
+            # Find columns to project on the left
+            for col in left.columns:
+                if col in left_on or col in projection:
+                    project_left.append(col)
+                elif f"{col}{left_suffix}" in projection:
+                    project_left.append(col)
+                    if col in right.columns:
+                        # Right column must be present
+                        # for the suffix to be applied
+                        project_right.append(col)
+
+            # Find columns to project on the right
+            for col in right.columns:
+                if col in right_on or col in projection:
+                    project_right.append(col)
+                elif f"{col}{right_suffix}" in projection:
+                    project_right.append(col)
+                    if col in left.columns and col not in project_left:
+                        # Left column must be present
+                        # for the suffix to be applied
+                        project_left.append(col)
+
+            if set(project_left) < set(left.columns) or set(project_right) < set(
+                right.columns
+            ):
+                return type(self)(
+                    left[project_left], right[project_right], *self.operands[2:]
+                )[parent.operand("columns")]
 
 
 class JoinRecursive(Expr):

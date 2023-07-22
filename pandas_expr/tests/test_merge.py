@@ -83,7 +83,6 @@ def test_broadcast_merge(how):
     assert_eq(df3.optimize(fuse=False), expect, check_index=False)
 
 
-@pytest.mark.xfail(reason="Projection is missing")
 def test_merge_column_projection():
     # Make simple left & right dfs
     pdf1 = pd.DataFrame({"x": range(20), "y": range(20), "z": range(20)})
