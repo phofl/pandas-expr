@@ -1,0 +1,9 @@
+name: pandas-expr
+channels:
+  - conda-forge
+dependencies:
+  - pytest
+  - pytest-cov
+  - pyarrow
+  - pandas>=2
+  - pre-commit
