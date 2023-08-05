@@ -59,6 +59,6 @@ class Concat(Blockwise):
                 for frame, cols in zip(self._frames, columns_frame)
             ]
             return type(parent)(
-                type(self)(self.join, self._kwargs, *frames),
+                type(self)(self.join, *frames),
                 *parent.operands[1:],
             )

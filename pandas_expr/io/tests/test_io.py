@@ -1,13 +1,13 @@
 import os
 
-import dask.dataframe as dd
 import pandas as pd
 import pytest
 from dask.dataframe.utils import assert_eq
-from dask_expr import from_dask_dataframe, from_pandas, optimize, read_csv, read_parquet
-from dask_expr._expr import Expr, Lengths, Literal, Replace
-from dask_expr._reductions import Len
-from dask_expr.io import ReadParquet
+
+from pandas_expr import optimize, read_parquet
+from pandas_expr._expr import Replace
+from pandas_expr._reductions import Len
+from pandas_expr.io import ReadParquet
 
 
 def _make_file(dir, format="parquet", df=None):
@@ -65,20 +65,6 @@ def test_optimize(tmpdir, input, expected):
     fn = _make_file(tmpdir, format="parquet")
     result = optimize(input(fn), fuse=False)
     assert str(result.expr) == str(expected(fn).expr)
-
-
-@pytest.mark.parametrize("fmt", ["parquet", "csv"])
-def test_io_fusion(tmpdir, fmt):
-    fn = _make_file(tmpdir, format=fmt)
-    if fmt == "parquet":
-        df = read_parquet(fn)
-    else:
-        df = read_csv(fn)
-    df2 = optimize(df[["a", "b"]] + 1, fuse=True)
-
-    # All tasks should be fused for each partition
-    assert len(df2.dask) == df2.npartitions
-    assert_eq(df2, df[["a", "b"]] + 1)
 
 
 def test_predicate_pushdown(tmpdir):
@@ -155,56 +141,6 @@ def test_predicate_pushdown_compound(tmpdir):
     assert_eq(y, z)
 
 
-@pytest.mark.parametrize("fmt", ["parquet", "csv", "pandas"])
-def test_io_culling(tmpdir, fmt):
-    pdf = pd.DataFrame({c: range(10) for c in "abcde"})
-    if fmt == "parquet":
-        dd.from_pandas(pdf, 2).to_parquet(tmpdir)
-        df = read_parquet(tmpdir)
-    elif fmt == "csv":
-        dd.from_pandas(pdf, 2).to_csv(tmpdir)
-        df = read_csv(tmpdir + "/*")
-    else:
-        df = from_pandas(pdf, 2)
-    df = (df[["a", "b"]] + 1).partitions[1]
-    df2 = optimize(df)
-
-    # All tasks should be fused for the single output partition
-    assert df2.npartitions == 1
-    assert len(df2.dask) == df2.npartitions
-    expected = pdf.iloc[5:][["a", "b"]] + 1
-    assert_eq(df2, expected, check_index=False)
-
-    def _check_culling(expr, partitions):
-        """CHeck that _partitions is set to the expected value"""
-        for dep in expr.dependencies():
-            _check_culling(dep, partitions)
-        if "_partitions" in expr._parameters:
-            assert expr._partitions == partitions
-
-    # Check that we still get culling without fusion
-    df3 = optimize(df, fuse=False)
-    _check_culling(df3.expr, [1])
-    assert_eq(df3, expected, check_index=False)
-
-
-@pytest.mark.parametrize("sort", [True, False])
-def test_from_pandas(sort):
-    pdf = pd.DataFrame({"x": [1, 4, 3, 2, 0, 5]})
-    df = from_pandas(pdf, npartitions=2, sort=sort)
-
-    assert df.divisions == (0, 3, 5) if sort else (None,) * 3
-    assert_eq(df, pdf)
-
-
-def test_from_pandas_immutable():
-    pdf = pd.DataFrame({"x": [1, 2, 3, 4]})
-    expected = pdf.copy()
-    df = from_pandas(pdf)
-    pdf["z"] = 100
-    assert_eq(df, expected)
-
-
 def test_parquet_complex_filters(tmpdir):
     df = read_parquet(_make_file(tmpdir))
     pdf = df.compute()
@@ -212,20 +148,7 @@ def test_parquet_complex_filters(tmpdir):
     expect = pdf["a"][pdf["b"] > pdf["b"].mean()]
 
     assert_eq(got, expect)
-    assert_eq(got.optimize(), expect)
-
-
-def test_parquet_len(tmpdir):
-    df = read_parquet(_make_file(tmpdir))
-    pdf = df.compute()
-
-    assert len(df[df.a > 5]) == len(pdf[pdf.a > 5])
-
-    s = (df["b"] + 1).astype("Int32")
-    assert len(s) == len(pdf)
-
-    assert isinstance(Len(s.expr).optimize(), Literal)
-    assert isinstance(Lengths(s.expr).optimize(), Literal)
+    assert_eq(got.optimize(fuse=False), expect)
 
 
 def test_parquet_len_filter(tmpdir):
@@ -236,43 +159,20 @@ def test_parquet_len_filter(tmpdir):
         assert rp.operand("columns") == ["c"] or rp.operand("columns") == []
 
 
-@pytest.mark.parametrize("optimize", [True, False])
-def test_from_dask_dataframe(optimize):
-    ddf = dd.from_dict({"a": range(100)}, npartitions=10)
-    df = from_dask_dataframe(ddf, optimize=optimize)
-    assert isinstance(df.expr, Expr)
-    assert_eq(df, ddf)
-
-
-@pytest.mark.parametrize("optimize", [True, False])
-def test_to_dask_dataframe(optimize):
-    pdf = pd.DataFrame({"x": [1, 4, 3, 2, 0, 5]})
-    df = from_pandas(pdf, npartitions=2)
-    ddf = df.to_dask_dataframe(optimize=optimize)
-    assert isinstance(ddf, dd.DataFrame)
-    assert_eq(df, ddf)
-
-
-@pytest.mark.parametrize("write_metadata_file", [True, False])
-def test_to_parquet(tmpdir, write_metadata_file):
-    pdf = pd.DataFrame({"x": [1, 4, 3, 2, 0, 5]})
-    df = from_pandas(pdf, npartitions=2)
-
-    # Check basic parquet round trip
-    df.to_parquet(tmpdir, write_metadata_file=write_metadata_file)
-    df2 = read_parquet(tmpdir, calculate_divisions=True)
-    assert_eq(df, df2)
-
-    # Check overwrite behavior
-    df["new"] = df["x"] + 1
-    df.to_parquet(tmpdir, overwrite=True, write_metadata_file=write_metadata_file)
-    df2 = read_parquet(tmpdir, calculate_divisions=True)
-    assert_eq(df, df2)
-
-    # Check that we cannot overwrite a path we are
-    # reading from in the same graph
-    with pytest.raises(ValueError, match="Cannot overwrite"):
-        df2.to_parquet(tmpdir, overwrite=True)
+# def test_to_parquet(tmpdir):
+#     pdf = pd.DataFrame({"x": [1, 4, 3, 2, 0, 5]})
+#     df = DataFrame(pdf)
+#
+#     # Check basic parquet round trip
+#     df.to_parquet(tmpdir + "/test.parquet")
+#     df2 = read_parquet(tmpdir + "/test.parquet")
+#     assert_eq(df, df2)
+#
+#     # Check overwrite behavior
+#     df["new"] = df["x"] + 1
+#     df.to_parquet(tmpdir + "/test.parquet")
+#     df2 = read_parquet(tmpdir + "/test.parquet")
+#     assert_eq(df, df2)
 
 
 def test_combine_similar(tmpdir):
@@ -294,7 +194,6 @@ def test_combine_similar(tmpdir):
     # Check correctness
     assert_eq(got, expect)
     assert_eq(got.optimize(fuse=False), expect)
-    assert_eq(got.optimize(fuse=True), expect)
 
     # We should only have one ReadParquet node, and
     # it should not include "z" in the column projection
