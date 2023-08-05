@@ -38,7 +38,7 @@ jobs:
           extra-specs: |
             python=${{ matrix.python-version }}
 
-      - name: Install Dask-Match
+      - name: Install pabdas-expr
         run: python -m pip install -e . --no-deps
 
       - name: Run tests
