@@ -72,3 +72,5 @@ Fillna: value=100
     Projection: columns=['a', 'b']
       PandasIO: data={'a': [1, 2, 3], 'b': ['x', 'y', 'z'], 'c': 1, 'd': 1.5}
 ```
+
+Use ``df.compute()`` to trigger the actual computation.
