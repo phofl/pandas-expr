@@ -531,6 +531,12 @@ class Expr:
     def count(self, numeric_only=False):
         return Count(self, numeric_only)
 
+    def median(self, skipna=True):
+        return Median(self, skipna=skipna)
+
+    def quantile(self, q=0.5):
+        return Quantile(self, q=q)
+
     def abs(self):
         return Abs(self)
 
@@ -1119,6 +1125,7 @@ class SetIndex(Elemwise):
     _projection_passthrough = True
     _parameters = ["frame", "other", "drop"]
     _defaults = {"drop": True}
+    _keyword_only = ["drop"]
     operation = M.set_index
 
 
@@ -1907,10 +1914,12 @@ from pandas_expr._reductions import (
     IdxMin,
     Max,
     Mean,
+    Median,
     Min,
     Mode,
     NBytes,
     Prod,
+    Quantile,
     Size,
     Std,
     Sum,

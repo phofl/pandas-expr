@@ -9,6 +9,7 @@ from pandas.core.accessor import CachedAccessor
 
 from pandas_expr import _expr as expr
 from pandas_expr._categorical import CategoricalAccessor
+from pandas_expr._accessor import StringAccessor, DatetimeAccessor
 from pandas_expr._concat import Concat
 from pandas_expr._deps import collections_to_dsk
 from pandas_expr._expr import Eval, no_default
@@ -240,6 +241,12 @@ class FrameBase:
 
     def count(self, numeric_only=False):
         return new_collection(self.expr.count(numeric_only))
+
+    def median(self, skipna=True):
+        return new_collection(self.expr.median(skipna))
+
+    def quantile(self, q=0.5):
+        return new_collection(self.expr.quantile(q))
 
     def abs(self):
         return new_collection(self.expr.abs())
@@ -554,8 +561,10 @@ class Series(FrameBase):
     def explode(self):
         return new_collection(expr.ExplodeSeries(self.expr))
 
-    _accessors = {"cat"}
+    _accessors = {"cat", "str", "dt"}
     cat = CachedAccessor("cat", CategoricalAccessor)
+    str = CachedAccessor("str", StringAccessor)
+    dt = CachedAccessor("dt", DatetimeAccessor)
 
 
 class Index(Series):

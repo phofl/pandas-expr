@@ -325,3 +325,23 @@ class MemoryUsageFrame(MemoryUsage):
     @property
     def reduction_kwargs(self):
         return {"deep": self.deep, "index": self._index}
+
+
+class Median(Reduction):
+    _parameters = ["frame", "skipna"]
+    _defaults = {"skipna": True}
+    reducer = M.median
+    
+    @property
+    def reduction_kwargs(self):
+        return {"skipna": self.skipna}
+
+
+class Quantile(Reduction):
+    _parameters = ["frame", "q"]
+    _defaults = {"q": 0.5}
+    reducer = M.quantile
+    
+    @property
+    def reduction_kwargs(self):
+        return {"q": self.q}
